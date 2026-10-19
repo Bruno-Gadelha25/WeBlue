@@ -1,0 +1,100 @@
+contracts:
+  - name: cliente-cadastro
+    unit: cliente-cadastro
+    type: rest
+    stability: frozen
+    source_loc: "src/backend/app/routers/clientes.py:24"
+    contract:
+      method: "POST"
+      path: "/api/clientes"
+      request: "{ nome_completo, email, cpf, telefone, senha }"
+      response: "Cliente criado com dados públicos e identificador"
+      error: "409 Conflict para e-mail ou CPF duplicados; 422 para validação"
+      auth: "none"
+    target_contract:
+      method: "POST /api/clientes"
+      notes: "Payload e resposta devem manter o mesmo contrato JSON de entrada/saída do backend atual."
+    semantic_divergence:
+      - field: "cpf"
+        issue: "O dado é armazenado como String(11) e validado no backend sem normalização de máscara."
+        source_loc: "src/backend/app/models/cliente.py:30"
+
+  - name: cliente-login
+    unit: cliente-login
+    type: rest
+    stability: frozen
+    source_loc: "src/backend/app/routers/login.py:17"
+    contract:
+      method: "POST"
+      path: "/api/auth/login"
+      request: "{ email, senha, lembrar? }"
+      response: "{ mensagem, access_token, token_type, cliente }"
+      error: "401 para credenciais inválidas; 403 para contas bloqueadas ou inativas"
+      auth: "none"
+    target_contract:
+      method: "POST /api/auth/login"
+      notes: "A resposta deve continuar retornando access_token e dados básicos do cliente em JSON."
+    semantic_divergence:
+      - field: "lembrar"
+        issue: "Quando true, a duração do token aumenta para 7 dias; quando false, usa expiração configurada em minutos."
+        source_loc: "src/backend/app/services/security.py:47"
+
+  - name: cliente-perfil
+    unit: cliente-perfil
+    type: rest
+    stability: frozen
+    source_loc: "src/backend/app/routers/perfil.py:98"
+    contract:
+      method: "GET/PUT"
+      path: "/api/perfil"
+      request: "GET sem payload; PUT com { nome_completo, email, telefone }"
+      response: "Dados públicos do cliente autenticado"
+      error: "401 para token inválido; 403 para conta fora do status ATIVA"
+      auth: "Bearer JWT"
+    target_contract:
+      method: "GET/PUT /api/perfil"
+      notes: "O cliente deve continuar recebendo o token via Authorization e sendo validado com JWT."
+    semantic_divergence:
+      - field: "status"
+        issue: "A conta deve estar em estado ATIVA para acesso normal; o status é do tipo string enumerada."
+        source_loc: "src/backend/app/models/cliente.py:46"
+
+  - name: produto-admin
+    unit: produto-admin
+    type: rest
+    stability: frozen
+    source_loc: "src/backend/app/routers/produtos.py:87"
+    contract:
+      method: "GET/POST/PUT/DELETE"
+      path: "/api/produtos"
+      request: "Cadastra/atualiza produto com nome, descricao, preco, estoque, categoria, marca, imagem_url"
+      response: "Produto cadastrado ou lista de produtos"
+      error: "404 para não encontrado; 422 para dados inválidos"
+      auth: "admin route, no explicit JWT in this file"
+    target_contract:
+      method: "GET/POST/PUT/DELETE /api/produtos"
+      notes: "A API do produto continua expondo os campos de catálogo e status do produto."
+    semantic_divergence:
+      - field: "preco"
+        issue: "Preço é tratado com Decimal em ORM e retornado em JSON como string ou valor numérico compatível."
+        source_loc: "src/backend/app/models/produto.py:127"
+
+  - name: admin-login
+    unit: admin-login
+    type: rest
+    stability: frozen
+    source_loc: "src/backend/app/routers/admin_auth.py:99"
+    contract:
+      method: "POST"
+      path: "/api/admin/auth/login"
+      request: "{ email, senha }"
+      response: "{ mensagem, access_token, token_type, administrador }"
+      error: "401 para credenciais inválidas; 403 para administrador desativado"
+      auth: "none"
+    target_contract:
+      method: "POST /api/admin/auth/login"
+      notes: "O login administrativo mantém fluxo separado do login de clientes."
+    semantic_divergence:
+      - field: "ativo"
+        issue: "A conta administrativa de serviço exige `ativo = true` para aceitar login."
+        source_loc: "src/backend/app/models/administrador.py:94"

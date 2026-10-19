@@ -1,0 +1,35 @@
+unit: cliente-login
+side_effects:
+  - source_loc: "src/backend/app/routers/login.py:27"
+    effect: "Consulta o cliente por email e valida a senha."
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/login.py:58"
+    effect: "Gera token JWT para acesso do cliente."
+    must_preserve: true
+branches:
+  - source_loc: "src/backend/app/routers/login.py:35"
+    condition: "Cliente não existe ou senha inválida."
+    behavior: "Retorna 401 Unauthorized."
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/login.py:44"
+    condition: "Cliente está bloqueado ou inativo."
+    behavior: "Retorna 403 Forbidden."
+    must_preserve: true
+error_paths:
+  - source_loc: "src/backend/app/routers/login.py:35"
+    trigger: "Credenciais inválidas."
+    outcome: "401 Unauthorized."
+    contract: "401 Unauthorized"
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/login.py:44"
+    trigger: "Status do cliente bloqueado/inativo."
+    outcome: "403 Forbidden."
+    contract: "403 Forbidden"
+    must_preserve: true
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: "src/backend/app/routers/login.py:27"
+    scope: "Consulta de cliente no banco e validação do token em memória."
+    isolation: "database default"
+    must_preserve: false

@@ -1,0 +1,113 @@
+units:
+  - name: cliente-cadastro
+    trigger: api
+    trigger_detail: "POST /api/clientes"
+    source_anchors:
+      - path: src/backend/app/routers/clientes.py
+        line: 24
+    exported_signature:
+      - method: "Cliente cadastrar_cliente(ClienteCriacao)"
+        source_loc: "src/backend/app/routers/clientes.py:24"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs:
+      - module: cliente.model
+        used_fields: [email, cpf, senha_hash, nome_completo, telefone]
+
+  - name: cliente-login
+    trigger: api
+    trigger_detail: "POST /api/auth/login"
+    source_anchors:
+      - path: src/backend/app/routers/login.py
+        line: 17
+    exported_signature:
+      - method: "LoginResposta realizar_login(LoginEntrada)"
+        source_loc: "src/backend/app/routers/login.py:17"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs:
+      - module: cliente.model
+        used_fields: [email, senha_hash, status, id, nome_completo]
+      - module: auth.security
+        used_fields: [verificar_senha, criar_token_acesso]
+
+  - name: cliente-recuperacao
+    trigger: api
+    trigger_detail: "POST /api/auth/solicitar-recuperacao, POST /api/auth/redefinir-senha"
+    source_anchors:
+      - path: src/backend/app/routers/recuperacao_senha.py
+        line: 30
+    exported_signature:
+      - method: "dict solicitar_recuperacao(SolicitarRecuperacaoRequest)"
+        source_loc: "src/backend/app/routers/recuperacao_senha.py:30"
+        stability: must_preserve
+      - method: "dict redefinir_senha(RedefinirSenhaRequest)"
+        source_loc: "src/backend/app/routers/recuperacao_senha.py:71"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs:
+      - module: cliente.model
+        used_fields: [email, senha_hash]
+      - module: auth.security
+        used_fields: [criar_hash_senha, criar_token_recuperacao, verificar_token_recuperacao]
+
+  - name: cliente-perfil
+    trigger: api
+    trigger_detail: "GET/PUT /api/perfil"
+    source_anchors:
+      - path: src/backend/app/routers/perfil.py
+        line: 98
+    exported_signature:
+      - method: "dict consultar_perfil(HTTPAuthorizationCredentials)"
+        source_loc: "src/backend/app/routers/perfil.py:98"
+        stability: must_preserve
+      - method: "dict atualizar_perfil(AtualizarPerfilRequest, HTTPAuthorizationCredentials)"
+        source_loc: "src/backend/app/routers/perfil.py:214"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs:
+      - module: cliente.model
+        used_fields: [id, email, cpf, telefone, status, nome_completo]
+      - module: auth.security
+        used_fields: [verificar_token_acesso]
+
+  - name: produto-admin
+    trigger: api
+    trigger_detail: "GET/POST/PUT/DELETE /api/produtos"
+    source_anchors:
+      - path: src/backend/app/routers/produtos.py
+        line: 87
+    exported_signature:
+      - method: "dict cadastrar_produto(CriarProdutoRequest)"
+        source_loc: "src/backend/app/routers/produtos.py:87"
+        stability: must_preserve
+      - method: "dict listar_produtos()"
+        source_loc: "src/backend/app/routers/produtos.py:270"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs:
+      - module: produto.model
+        used_fields: [nome, descricao, preco, estoque, categoria, marca, imagem_url, status]
+
+  - name: admin-login
+    trigger: api
+    trigger_detail: "POST /api/admin/auth/login"
+    source_anchors:
+      - path: src/backend/app/routers/admin_auth.py
+        line: 99
+    exported_signature:
+      - method: "dict login_administrador(AdministradorLogin)"
+        source_loc: "src/backend/app/routers/admin_auth.py:99"
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs:
+      - module: admin.model
+        used_fields: [email, senha_hash, ativo, nome]
+      - module: auth.security
+        used_fields: [verificar_senha_admin, criar_token_admin]

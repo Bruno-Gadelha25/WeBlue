@@ -1,0 +1,9 @@
+unit: cliente-cadastro
+bindings:
+  - type: route-declaration
+    name: "POST /api/clientes"
+    source_loc: "src/backend/app/routers/clientes.py:24"
+    target: "cadastrar_cliente"
+    must_appear_in_target: true
+    notes: "A rota expõe o cadastro de cliente para o frontend."
+runtime_config: []

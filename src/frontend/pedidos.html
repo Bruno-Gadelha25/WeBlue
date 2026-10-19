@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weblue | Pedidos</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f8f3f6;
+            color: #2d1b2d;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 32px 20px 60px;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .topbar a {
+            text-decoration: none;
+            color: #7c2d72;
+            font-weight: 700;
+        }
+        .panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(60, 20, 52, 0.08);
+        }
+        .busca {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .busca input {
+            flex: 1;
+            border: 1px solid #e5d6e3;
+            border-radius: 10px;
+            padding: 12px;
+        }
+        .busca button {
+            border: 0;
+            background: #7c2d72;
+            color: white;
+            border-radius: 10px;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .pedido {
+            border: 1px solid #f1e3ee;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+        .pedido-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .badge {
+            display: inline-block;
+            background: #f3d9ea;
+            color: #4b1a43;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+        .empty {
+            text-align: center;
+            color: #5b4455;
+            padding: 30px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <a href="/home">← Voltar para a loja</a>
+            <a href="/carrinho">Carrinho</a>
+        </div>
+
+        <h1>Meus pedidos</h1>
+
+        <section class="panel">
+            <div class="busca">
+                <input id="emailPedido" type="email" placeholder="Informe o e-mail para consultar o histórico">
+                <button id="botaoBuscarPedidos" type="button">Buscar</button>
+            </div>
+
+            <div id="listaPedidos"></div>
+            <div id="mensagemPedidos" class="empty"></div>
+        </section>
+    </div>
+
+    <script src="/js/pedidos.js"></script>
+</body>
+</html>

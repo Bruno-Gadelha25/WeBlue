@@ -1,0 +1,35 @@
+unit: cliente-cadastro
+side_effects:
+  - source_loc: "src/backend/app/routers/clientes.py:34"
+    effect: "Query de email/cpf para prevenir duplicidade antes de criar cliente."
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/clientes.py:54"
+    effect: "Criação de registro em clientes com hash seguro da senha."
+    must_preserve: true
+branches:
+  - source_loc: "src/backend/app/routers/clientes.py:43"
+    condition: "Email já cadastrado ou CPF já existe."
+    behavior: "Retorna 409 Conflict com mensagem específica."
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/clientes.py:63"
+    condition: "IntegrityError no banco."
+    behavior: "Executa rollback e retorna 409 Conflict."
+    must_preserve: true
+error_paths:
+  - source_loc: "src/backend/app/routers/clientes.py:49"
+    trigger: "Conflito de CPF ou e-mail."
+    outcome: "HTTP 409 com detalhe do conflito."
+    contract: "409 Conflict"
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/clientes.py:71"
+    trigger: "Violação de unicidade no banco."
+    outcome: "HTTP 409 e rollback."
+    contract: "409 Conflict"
+    must_preserve: true
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: "src/backend/app/routers/clientes.py:63"
+    scope: "Registro único do cliente e gravação do hash da senha em uma transação SQL."
+    isolation: "database default"
+    must_preserve: true

@@ -23,6 +23,7 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    Request,
     status,
 )
 
@@ -61,6 +62,9 @@ from ..models.administrador import Administrador
 from ..schemas.administrador import (
     AdministradorLogin,
     AdministradorLoginResposta,
+    AdministradorResposta,
+    LogoutRequest,
+    RefreshTokenRequest,
 )
 
 
@@ -69,8 +73,17 @@ from ..schemas.administrador import (
 # ============================================================
 
 from ..services.admin_security import (
+    criar_refresh_token_admin,
     criar_token_admin,
+    extrair_jti,
+    revogar_token,
+    verificar_refresh_token_admin,
     verificar_senha_admin,
+)
+from ..services.security import (
+    clear_attempts,
+    is_rate_limited,
+    register_failed_attempt,
 )
 
 
@@ -87,7 +100,6 @@ from ..services.admin_security import (
 # ============================================================
 
 router = APIRouter(
-    prefix="/admin/auth",
     tags=["Admin - Autenticação"]
 )
 
@@ -103,39 +115,25 @@ router = APIRouter(
     summary="Realizar login do administrador"
 )
 def login_administrador(
+    request: Request,
     dados: AdministradorLogin,
-
-    # --------------------------------------------------------
-    # CORREÇÃO:
-    #
-    # Antes estava:
-    #
-    # Depends(get_db)
-    #
-    # Porém get_db não existe no database.py da Weblue.
-    #
-    # A função correta é:
-    #
-    # get_database
-    # --------------------------------------------------------
-
     db: Session = Depends(get_database)
 ):
-
-    # ========================================================
-    # NORMALIZAR E-MAIL
-    # ========================================================
-    #
-    # Remove espaços acidentais e transforma o e-mail
-    # em letras minúsculas antes da consulta.
-    # ========================================================
-
     email = dados.email.strip().lower()
 
+    permitido, retry_after = is_rate_limited(
+        request,
+        email,
+        prefix="login_admin",
+        max_attempts=5,
+        window_seconds=900,
+    )
 
-    # ========================================================
-    # PROCURAR ADMINISTRADOR PELO E-MAIL
-    # ========================================================
+    if not permitido:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Muitas tentativas de login. Tente novamente em {retry_after} segundos."
+        )
 
     administrador = (
         db.query(Administrador)
@@ -145,19 +143,8 @@ def login_administrador(
         .first()
     )
 
-
-    # ========================================================
-    # ADMINISTRADOR NÃO ENCONTRADO
-    # ========================================================
-    #
-    # A mensagem é propositalmente genérica.
-    #
-    # Dessa forma não revelamos se determinado
-    # e-mail administrativo existe no banco.
-    # ========================================================
-
     if administrador is None:
-
+        register_failed_attempt(request, email, prefix="login_admin")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="E-mail ou senha inválidos.",
@@ -166,35 +153,20 @@ def login_administrador(
             }
         )
 
-
-    # ========================================================
-    # VERIFICAR SE A CONTA ESTÁ ATIVA
-    # ========================================================
-
     if not administrador.ativo:
-
+        register_failed_attempt(request, email, prefix="login_admin")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso administrativo desativado."
         )
-
-
-    # ========================================================
-    # VERIFICAR SENHA
-    # ========================================================
 
     senha_correta = verificar_senha_admin(
         dados.senha,
         administrador.senha_hash
     )
 
-
-    # ========================================================
-    # SENHA INCORRETA
-    # ========================================================
-
     if not senha_correta:
-
+        register_failed_attempt(request, email, prefix="login_admin")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="E-mail ou senha inválidos.",
@@ -203,19 +175,18 @@ def login_administrador(
             }
         )
 
-
-    # ========================================================
-    # GERAR JWT ADMINISTRATIVO
-    # ========================================================
+    clear_attempts(request, email, prefix="login_admin")
 
     access_token = criar_token_admin(
         administrador.id
     )
+    refresh_token, _ = criar_refresh_token_admin(administrador.id)
 
-
-    # ========================================================
-    # RETORNAR LOGIN
-    # ========================================================
+    administrador_publico = (
+        AdministradorResposta.model_validate(
+            administrador
+        ).model_dump()
+    )
 
     return {
         "mensagem":
@@ -223,10 +194,66 @@ def login_administrador(
 
         "access_token":
             access_token,
-
+        "refresh_token":
+            refresh_token,
         "token_type":
             "bearer",
 
         "administrador":
-            administrador
+            administrador_publico
     }
+
+
+@router.post("/refresh")
+def refresh_administrador(
+    request: Request,
+    dados: RefreshTokenRequest,
+    db: Session = Depends(get_database)
+):
+    refresh_token = dados.refresh_token
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token ausente."
+        )
+
+    administrador_id = verificar_refresh_token_admin(refresh_token)
+    if administrador_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token inválido ou revogado."
+        )
+
+    administrador = db.get(Administrador, administrador_id)
+    if administrador is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Administrador não encontrado."
+        )
+
+    revogar_token(extrair_jti(refresh_token))
+    novo_access_token = criar_token_admin(administrador.id)
+    novo_refresh_token, _ = criar_refresh_token_admin(administrador.id)
+
+    return {
+        "access_token": novo_access_token,
+        "refresh_token": novo_refresh_token,
+        "token_type": "bearer",
+    }
+
+
+@router.post("/logout")
+def logout_administrador(
+    request: Request,
+    dados: LogoutRequest,
+    db: Session = Depends(get_database)
+):
+    access_token = dados.access_token
+    refresh_token = dados.refresh_token
+
+    if access_token:
+        revogar_token(extrair_jti(access_token))
+    if refresh_token:
+        revogar_token(extrair_jti(refresh_token))
+
+    return {"mensagem": "Logout realizado com sucesso."}

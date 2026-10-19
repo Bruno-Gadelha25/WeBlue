@@ -74,7 +74,6 @@ from ..services.security import verificar_token_acesso
 #
 # PUT /perfil
 router = APIRouter(
-    prefix="/perfil",
     tags=["Perfil"]
 )
 

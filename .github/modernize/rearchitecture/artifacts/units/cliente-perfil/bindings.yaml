@@ -1,0 +1,15 @@
+unit: cliente-perfil
+bindings:
+  - type: http-bearer
+    name: "Authorization: Bearer <token>"
+    source_loc: "src/backend/app/routers/perfil.py:86"
+    target: "consultar_perfil"
+    must_appear_in_target: true
+    notes: "A autenticação do cliente depende de token JWT no cabeçalho Authorization."
+  - type: route-declaration
+    name: "GET/PUT /api/perfil"
+    source_loc: "src/backend/app/routers/perfil.py:98"
+    target: "perfil_router"
+    must_appear_in_target: true
+    notes: "As rotas de perfil continuam protegidas pelo caminho /api/perfil."
+runtime_config: []

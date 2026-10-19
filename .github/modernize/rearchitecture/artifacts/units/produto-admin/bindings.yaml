@@ -1,0 +1,9 @@
+unit: produto-admin
+bindings:
+  - type: route-declaration
+    name: "GET/POST/PUT/DELETE /api/produtos"
+    source_loc: "src/backend/app/routers/produtos.py:69"
+    target: "produtos_router"
+    must_appear_in_target: true
+    notes: "O módulo de produtos expõe operação CRUD para o painel administrativo e consulta pública."
+runtime_config: []

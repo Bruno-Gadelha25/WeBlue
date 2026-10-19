@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import DateTime, Enum, String, text
 from sqlalchemy.dialects.mysql import BIGINT
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
 
@@ -65,4 +65,9 @@ class Cliente(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP"),
         server_onupdate=text("CURRENT_TIMESTAMP")
+    )
+
+    pedidos: Mapped[list["Pedido"]] = relationship(
+        "Pedido",
+        back_populates="cliente"
     )

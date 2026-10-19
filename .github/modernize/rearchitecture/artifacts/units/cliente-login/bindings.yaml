@@ -1,0 +1,15 @@
+unit: cliente-login
+bindings:
+  - type: route-declaration
+    name: "POST /api/auth/login"
+    source_loc: "src/backend/app/routers/login.py:17"
+    target: "realizar_login"
+    must_appear_in_target: true
+    notes: "A rota de login da API deve continuar retornando token JWT e dados do cliente."
+runtime_config:
+  - key: "jwt_expire_minutes"
+    source_loc: "src/backend/app/config.py:19"
+    source: env
+    default_value: "30"
+    must_appear_in_target: true
+    notes: "Tempo padrão de expiração do token para login padrão."

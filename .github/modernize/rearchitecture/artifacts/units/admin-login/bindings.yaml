@@ -1,0 +1,9 @@
+unit: admin-login
+bindings:
+  - type: route-declaration
+    name: "POST /api/admin/auth/login"
+    source_loc: "src/backend/app/routers/admin_auth.py:99"
+    target: "login_administrador"
+    must_appear_in_target: true
+    notes: "O login administrativo permanece separado do fluxo do cliente."
+runtime_config: []

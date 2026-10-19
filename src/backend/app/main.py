@@ -86,6 +86,10 @@ from .models.produto import Produto
 # Model da tabela administradores.
 from .models.administrador import Administrador
 
+# Modelos das tabelas de pedidos.
+from .models.item_pedido import ItemPedido
+from .models.pedido import Pedido
+
 
 # ============================================================
 # ROUTER PRINCIPAL DA API
@@ -133,11 +137,13 @@ async def lifespan(app: FastAPI):
     # Cria automaticamente as tabelas que ainda
     # não existem no banco.
     #
-    # Como Cliente e Produto foram importados acima,
+    # Como os modelos foram importados acima,
     # o SQLAlchemy conhece:
     #
     # clientes
     # produtos
+    # pedidos
+    # itens_pedido
     Base.metadata.create_all(
         bind=engine
     )
@@ -308,6 +314,10 @@ def pagina_inicial():
 # ============================================================
 
 @app.get(
+    "/index",
+    include_in_schema=False,
+)
+@app.get(
     "/index.html",
     include_in_schema=False,
 )
@@ -322,6 +332,10 @@ def pagina_index():
 # HOME
 # ============================================================
 
+@app.get(
+    "/home",
+    include_in_schema=False,
+)
 @app.get(
     "/home.html",
     include_in_schema=False,
@@ -349,6 +363,10 @@ def pagina_home():
     "/cadastro",
     include_in_schema=False,
 )
+@app.get(
+    "/cadastro.html",
+    include_in_schema=False,
+)
 def pagina_cadastro():
 
     # Retorna a página de cadastro.
@@ -363,6 +381,10 @@ def pagina_cadastro():
 
 @app.get(
     "/login",
+    include_in_schema=False,
+)
+@app.get(
+    "/login.html",
     include_in_schema=False,
 )
 def pagina_login():
@@ -381,6 +403,10 @@ def pagina_login():
     "/recuperar-senha",
     include_in_schema=False,
 )
+@app.get(
+    "/recuperar-senha.html",
+    include_in_schema=False,
+)
 def pagina_recuperar_senha():
 
     # Retorna a página de recuperação de senha.
@@ -397,6 +423,10 @@ def pagina_recuperar_senha():
     "/cliente",
     include_in_schema=False,
 )
+@app.get(
+    "/cliente.html",
+    include_in_schema=False,
+)
 def pagina_cliente():
 
     # Retorna a área do cliente.
@@ -406,9 +436,67 @@ def pagina_cliente():
 
 
 # ============================================================
+# CARRINHO DE COMPRAS
+# ============================================================
+
+@app.get(
+    "/carrinho",
+    include_in_schema=False,
+)
+@app.get(
+    "/carrinho.html",
+    include_in_schema=False,
+)
+def pagina_carrinho():
+    return FileResponse(
+        FRONTEND_DIR / "carrinho.html"
+    )
+
+
+# ============================================================
+# CHECKOUT
+# ============================================================
+
+@app.get(
+    "/checkout",
+    include_in_schema=False,
+)
+@app.get(
+    "/checkout.html",
+    include_in_schema=False,
+)
+def pagina_checkout():
+    return FileResponse(
+        FRONTEND_DIR / "checkout.html"
+    )
+
+
+# ============================================================
+# HISTÓRICO DE PEDIDOS
+# ============================================================
+
+@app.get(
+    "/pedidos",
+    include_in_schema=False,
+)
+@app.get(
+    "/pedidos.html",
+    include_in_schema=False,
+)
+def pagina_pedidos():
+    return FileResponse(
+        FRONTEND_DIR / "pedidos.html"
+    )
+
+
+# ============================================================
 # PAINEL ADMINISTRATIVO DE PRODUTOS
 # ============================================================
 
+@app.get(
+    "/admin-produtos",
+    include_in_schema=False,
+)
 @app.get(
     "/admin-produtos.html",
     include_in_schema=False,
@@ -431,6 +519,10 @@ def pagina_admin_produtos():
 # PÁGINA - LOGIN ADMINISTRATIVO
 # ============================================================
 
+@app.get(
+    "/admin-login",
+    include_in_schema=False,
+)
 @app.get(
     "/admin-login.html",
     include_in_schema=False

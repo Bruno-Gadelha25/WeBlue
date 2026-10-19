@@ -16,7 +16,6 @@ from ..services.security import criar_hash_senha
 
 
 router = APIRouter(
-    prefix="/clientes",
     tags=["Clientes"]
 )
 

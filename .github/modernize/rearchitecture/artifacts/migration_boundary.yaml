@@ -1,0 +1,44 @@
+user_intent:
+  raw_request: "Analisar o projeto Weblue em sua arquitetura atual."
+  inferred_acceptance:
+    - "Compreender a estrutura do sistema e seus fluxos principais."
+    - "Preservar a arquitetura existente sem reescrever o projeto em massa."
+  cleanup_required: false
+strategy: minimal_runtime
+runtime_reachable:
+  - src/backend/app/main.py
+  - src/backend/app/api.py
+  - src/backend/app/database.py
+  - src/backend/app/config.py
+  - src/backend/app/models
+  - src/backend/app/routers
+  - src/backend/app/services
+must_rewrite:
+  - path: src/backend/app/main.py
+    reason: "Ponto de entrada da aplicação FastAPI e serviço de arquivos estáticos."
+  - path: src/backend/app/api.py
+    reason: "Registro central dos routers HTTP e prefixo da API."
+  - path: src/backend/app/routers/clientes.py
+    reason: "Contrato de cadastro de clientes e escrita em banco."
+  - path: src/backend/app/routers/login.py
+    reason: "Autenticação de clientes e geração de JWT."
+  - path: src/backend/app/routers/recuperacao_senha.py
+    reason: "Fluxo de recuperação de senha com tokens temporários."
+  - path: src/backend/app/routers/perfil.py
+    reason: "Leitura/atualização de dados do cliente autenticado."
+  - path: src/backend/app/routers/produtos.py
+    reason: "Gestão de catálogo e painel administrativo de produtos."
+  - path: src/backend/app/routers/admin_auth.py
+    reason: "Autenticação separada para área administrativa."
+copy_as_is:
+  - path: src/frontend
+    reason: "Frontend estático pode ser servido pela mesma aplicação sem exigir reescrita do backend no escopo desta análise."
+legacy_allowed_to_remain:
+  - path: src/frontend/js
+    reason: "Scripts políticos de UI podem permanecer enquanto a API e o domínio estiverem estáveis."
+defer_cleanup:
+  - "Padronizar a lógica duplicada do frontend após estabilizar autenticação e catalogação."
+full_rewrite_reason: null
+implementation_rule: >
+  A implementação usa must_rewrite como escopo principal, sem inferir reescrita a partir de toda a árvore de arquivos.
+  Frontend estático e rotas legadas podem permanecer até a etapa de cutover ser explicitamente solicitada.

@@ -61,13 +61,22 @@
             </div>
 
 
-            <!-- Voltar para a loja -->
-            <a
-                href="/home.html"
-                class="botao-voltar"
-            >
-                ← Voltar para a loja
-            </a>
+            <div class="cabecalho-acoes">
+                <a
+                    href="/home.html"
+                    class="botao-voltar"
+                >
+                    ← Voltar para a loja
+                </a>
+
+                <button
+                    type="button"
+                    id="btnSairAdmin"
+                    class="botao-sair"
+                >
+                    Sair
+                </button>
+            </div>
 
         </div>
 
@@ -292,6 +301,28 @@
 
             </div>
 
+        </section>
+
+        <section class="secao-admin-resumo">
+           <div class="resumo-admin-card">
+               <div class="resumo-admin-cabecalho">
+                   <span class="titulo-pequeno">PEDIDOS RECENTES</span>
+                   <h2>Últimas vendas</h2>
+               </div>
+               <div id="listaPedidosRecentes" class="lista-admin-detalhes">
+                   <p class="carregando">Carregando pedidos...</p>
+               </div>
+           </div>
+
+           <div class="resumo-admin-card">
+               <div class="resumo-admin-cabecalho">
+                   <span class="titulo-pequeno">ESTOQUE</span>
+                   <h2>Produtos com pouca quantidade</h2>
+               </div>
+               <div id="listaEstoqueBaixo" class="lista-admin-detalhes">
+                   <p class="carregando">Carregando estoque...</p>
+               </div>
+           </div>
         </section>
 
     </main>

@@ -1,0 +1,21 @@
+unit: cliente-recuperacao
+bindings:
+  - type: route-declaration
+    name: "POST /api/auth/solicitar-recuperacao"
+    source_loc: "src/backend/app/routers/recuperacao_senha.py:30"
+    target: "solicitar_recuperacao"
+    must_appear_in_target: true
+    notes: "Gera o token temporário para recuperação de senha."
+  - type: route-declaration
+    name: "POST /api/auth/redefinir-senha"
+    source_loc: "src/backend/app/routers/recuperacao_senha.py:71"
+    target: "redefinir_senha"
+    must_appear_in_target: true
+    notes: "Valida o token e persiste a nova senha com hash."
+runtime_config:
+  - key: "jwt_expire_minutes"
+    source_loc: "src/backend/app/config.py:19"
+    source: env
+    default_value: "30"
+    must_appear_in_target: false
+    notes: "A expiração de recuperação usa 15 minutos fixos no serviço e não a configuração padrão."

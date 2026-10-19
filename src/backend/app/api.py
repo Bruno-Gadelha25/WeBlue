@@ -85,6 +85,14 @@ from .routers.produtos import (
     router as produtos_router
 )
 
+# ------------------------------------------------------------
+# PEDIDOS E VENDAS
+# ------------------------------------------------------------
+
+from .routers.pedidos import (
+    router as pedidos_router
+)
+
 
 # ------------------------------------------------------------
 # AUTENTICAÇÃO DO ADMINISTRADOR
@@ -128,7 +136,8 @@ api_router = APIRouter(
 # ------------------------------------------------------------
 
 api_router.include_router(
-    clientes_router
+    clientes_router,
+    prefix="/clientes"
 )
 
 
@@ -137,7 +146,8 @@ api_router.include_router(
 # ------------------------------------------------------------
 
 api_router.include_router(
-    login_router
+    login_router,
+    prefix="/auth"
 )
 
 
@@ -146,7 +156,8 @@ api_router.include_router(
 # ------------------------------------------------------------
 
 api_router.include_router(
-    recuperacao_senha_router
+    recuperacao_senha_router,
+    prefix="/auth"
 )
 
 
@@ -155,7 +166,8 @@ api_router.include_router(
 # ------------------------------------------------------------
 
 api_router.include_router(
-    perfil_router
+    perfil_router,
+    prefix="/perfil"
 )
 
 
@@ -164,7 +176,18 @@ api_router.include_router(
 # ------------------------------------------------------------
 
 api_router.include_router(
-    produtos_router
+    produtos_router,
+    prefix="/produtos"
+)
+
+
+# ------------------------------------------------------------
+# PEDIDOS E VENDAS
+# ------------------------------------------------------------
+
+api_router.include_router(
+    pedidos_router,
+    prefix="/pedidos"
 )
 
 
@@ -173,5 +196,6 @@ api_router.include_router(
 # ------------------------------------------------------------
 
 api_router.include_router(
-    admin_auth_router
+    admin_auth_router,
+    prefix="/admin/auth"
 )

@@ -271,3 +271,4 @@ class AtualizarProdutoRequest(BaseModel):
         default=None,
         max_length=20
     )
+    

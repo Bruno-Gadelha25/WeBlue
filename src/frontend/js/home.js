@@ -21,7 +21,8 @@
 
 // Como frontend e backend estão sendo executados
 // pelo mesmo FastAPI, podemos utilizar uma rota relativa.
-const API_PRODUTOS = "/api/produtos";
+const API_PRODUTOS = "/api/produtos/catalogo";
+const CHAVE_CARRINHO = "weblue-carrinho";
 
 
 // ============================================================
@@ -52,6 +53,9 @@ const campoBusca =
 const botoesCategoria =
     document.querySelectorAll("[data-categoria]");
 
+const botaoCarrinho =
+    document.getElementById("botaoCarrinho");
+
 
 // ============================================================
 // LISTA LOCAL
@@ -60,6 +64,55 @@ const botoesCategoria =
 // Depois que buscarmos os produtos da API,
 // vamos guardar os produtos ativos aqui.
 let produtos = [];
+
+function obterCarrinho() {
+    try {
+        const carrinhoSalvo = localStorage.getItem(CHAVE_CARRINHO);
+        return carrinhoSalvo ? JSON.parse(carrinhoSalvo) : [];
+    } catch (erro) {
+        console.error("Não foi possível carregar o carrinho.", erro);
+        return [];
+    }
+}
+
+function salvarCarrinho(carrinho) {
+    localStorage.setItem(CHAVE_CARRINHO, JSON.stringify(carrinho));
+}
+
+function atualizarContadorCarrinho() {
+    const contador = document.getElementById("contadorCarrinho");
+    if (!contador) {
+        return;
+    }
+
+    const carrinho = obterCarrinho();
+    const totalItens = carrinho.reduce((soma, item) => soma + Number(item.quantidade || 0), 0);
+    contador.textContent = String(totalItens);
+}
+
+function adicionarAoCarrinho(produto) {
+    const carrinho = obterCarrinho();
+    const itemExistente = carrinho.find((item) => item.id === produto.id);
+
+    if (itemExistente) {
+        itemExistente.quantidade += 1;
+    } else {
+        carrinho.push({
+            id: produto.id,
+            nome: produto.nome,
+            preco: produto.preco,
+            quantidade: 1,
+        });
+    }
+
+    salvarCarrinho(carrinho);
+    atualizarContadorCarrinho();
+
+    if (botaoCarrinho) {
+        botaoCarrinho.classList.add("pulse");
+        setTimeout(() => botaoCarrinho.classList.remove("pulse"), 250);
+    }
+}
 
 
 // ============================================================
@@ -325,17 +378,12 @@ function criarCardProduto(produto) {
     }
 
 
-    // Carrinho ainda não foi implementado.
-    // Por enquanto mostramos o produto no console.
+    // Quando o botão for clicado, adicionamos o produto
+    // ao localStorage para o carrinho funcionar em toda a loja.
     botao.addEventListener(
         "click",
         () => {
-
-            console.log(
-                "Produto selecionado:",
-                produto
-            );
-
+            adicionarAoCarrinho(produto);
         }
     );
 
@@ -765,15 +813,25 @@ botoesCategoria.forEach(
 // Mesmo assim, verificamos o estado do documento
 // para deixar o código mais robusto.
 
+if (botaoCarrinho) {
+    botaoCarrinho.addEventListener("click", () => {
+        window.location.href = "/carrinho";
+    });
+}
+
 if (document.readyState === "loading") {
 
     document.addEventListener(
         "DOMContentLoaded",
-        carregarProdutos
+        () => {
+            atualizarContadorCarrinho();
+            carregarProdutos();
+        }
     );
 
 } else {
 
+    atualizarContadorCarrinho();
     carregarProdutos();
 
 }

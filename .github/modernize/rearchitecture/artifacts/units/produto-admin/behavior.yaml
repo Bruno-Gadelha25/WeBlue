@@ -1,0 +1,35 @@
+unit: produto-admin
+side_effects:
+  - source_loc: "src/backend/app/routers/produtos.py:182"
+    effect: "Cria objeto Produto e persiste no banco de dados."
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/produtos.py:338"
+    effect: "Atualiza dados do produto e mantém status/estoque."
+    must_preserve: true
+branches:
+  - source_loc: "src/backend/app/routers/produtos.py:146"
+    condition: "Nome, descrição, categoria ou marca com valores inválidos."
+    behavior: "Retorna 422 Unprocessable Entity."
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/produtos.py:442"
+    condition: "Produto não encontrado para operação de edição ou exclusão."
+    behavior: "Retorna 404 Not Found."
+    must_preserve: true
+error_paths:
+  - source_loc: "src/backend/app/routers/produtos.py:146"
+    trigger: "Dados de produto inválidos."
+    outcome: "422 Unprocessable Entity."
+    contract: "422 Unprocessable Entity"
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/produtos.py:442"
+    trigger: "Produto inexistente."
+    outcome: "404 Not Found."
+    contract: "404 Not Found"
+    must_preserve: true
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: "src/backend/app/routers/produtos.py:213"
+    scope: "Persistência de produto no banco e resumo de resposta do registro."
+    isolation: "database default"
+    must_preserve: true

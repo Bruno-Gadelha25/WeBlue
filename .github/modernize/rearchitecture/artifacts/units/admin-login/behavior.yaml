@@ -1,0 +1,35 @@
+unit: admin-login
+side_effects:
+  - source_loc: "src/backend/app/routers/admin_auth.py:140"
+    effect: "Busca administrador por email e valida status e senha."
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/admin_auth.py:211"
+    effect: "Emite JWT administrativo para login com sucesso."
+    must_preserve: true
+branches:
+  - source_loc: "src/backend/app/routers/admin_auth.py:159"
+    condition: "Administrador não encontrado."
+    behavior: "Retorna 401 Unauthorized."
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/admin_auth.py:174"
+    condition: "Conta administrativa está inativa."
+    behavior: "Retorna 403 Forbidden."
+    must_preserve: true
+error_paths:
+  - source_loc: "src/backend/app/routers/admin_auth.py:159"
+    trigger: "Credenciais inválidas."
+    outcome: "401 Unauthorized."
+    contract: "401 Unauthorized"
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/admin_auth.py:174"
+    trigger: "Acesso administrativo desativado."
+    outcome: "403 Forbidden."
+    contract: "403 Forbidden"
+    must_preserve: true
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: "src/backend/app/routers/admin_auth.py:140"
+    scope: "Consulta de administrador e geração de token em memória."
+    isolation: "database default"
+    must_preserve: false

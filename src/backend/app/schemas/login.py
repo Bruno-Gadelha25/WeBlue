@@ -19,8 +19,18 @@ class ClienteAutenticado(BaseModel):
     status: str
 
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
+class LogoutRequest(BaseModel):
+    access_token: str | None = None
+    refresh_token: str | None = None
+
+
 class LoginResposta(BaseModel):
     mensagem: str
     access_token: str
+    refresh_token: str
     token_type: str
     cliente: ClienteAutenticado

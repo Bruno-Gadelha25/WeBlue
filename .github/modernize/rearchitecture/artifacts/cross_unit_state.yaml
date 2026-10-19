@@ -1,0 +1,28 @@
+flows:
+  - name: token-weblue-session
+    medium: session
+    key: "tokenWeblue"
+    writer:
+      unit: cliente-login
+      source_loc: "src/frontend/js/login.js:286"
+    reader:
+      unit: cliente-perfil
+      source_loc: "src/frontend/js/cliente.js:47"
+    pairing: matched
+    must_preserve: true
+    verification_hint: "Validar que o token persiste em sessionStorage/localStorage e é usado na tela do cliente."
+    notes: "O login registra o token e o perfil lê o mesmo identificador para autenticar a sessão do cliente."
+
+  - name: cliente-data-identity
+    medium: session
+    key: "clienteWeblue"
+    writer:
+      unit: cliente-login
+      source_loc: "src/frontend/js/login.js:299"
+    reader:
+      unit: cliente-perfil
+      source_loc: "src/frontend/js/cliente.js:56"
+    pairing: matched
+    must_preserve: true
+    verification_hint: "Confirmar que os dados do cliente persistem no navegador e sejam utilizados no painel do cliente."
+    notes: "Dados do cliente são armazenados no navegador após autenticação e consumidos nas telas de perfil e área logada."

@@ -23,6 +23,7 @@ from sqlalchemy import (
     Integer,
     DateTime
 )
+from sqlalchemy.dialects.mysql import BIGINT
 
 
 # Recursos do SQLAlchemy 2.x utilizados para declarar
@@ -75,7 +76,7 @@ class Produto(Base):
     #
     # 1, 2, 3, 4...
     id: Mapped[int] = mapped_column(
-        Integer,
+        BIGINT(unsigned=True),
         primary_key=True,
         autoincrement=True
     )

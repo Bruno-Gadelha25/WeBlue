@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weblue | Carrinho</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f8f3f6;
+            color: #2d1b2d;
+        }
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 20px 60px;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .topbar a {
+            text-decoration: none;
+            color: #7c2d72;
+            font-weight: 700;
+        }
+        .cart-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(60, 20, 52, 0.08);
+        }
+        .item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            border-bottom: 1px solid #f1e3ee;
+            padding: 16px 0;
+        }
+        .item h3 {
+            margin: 0 0 8px;
+            font-size: 1.1rem;
+        }
+        .item p {
+            margin: 0;
+            color: #5b4455;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .controls button {
+            border: 0;
+            background: #f3d9ea;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .summary {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+        .total {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #7c2d72;
+        }
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        button, .btn-link {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            border: 0;
+            border-radius: 10px;
+            cursor: pointer;
+            padding: 12px 16px;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .btn-primary {
+            background: #7c2d72;
+            color: white;
+        }
+        .btn-secondary {
+            background: #f3d9ea;
+            color: #4b1a43;
+        }
+        .empty {
+            padding: 30px 0;
+            text-align: center;
+            color: #5b4455;
+        }
+        @media (max-width: 760px) {
+            .cart-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <a href="/home">← Voltar para a loja</a>
+            <a href="/pedidos">Meus pedidos</a>
+        </div>
+
+        <h1>Carrinho de compras</h1>
+
+        <div class="cart-grid">
+            <section class="panel">
+                <div id="listaCarrinho"></div>
+                <div id="mensagemCarrinho" class="empty"></div>
+            </section>
+
+            <aside class="panel summary">
+                <div>
+                    <h2>Resumo</h2>
+                    <p id="quantidadeItens">0 itens</p>
+                </div>
+
+                <div class="total" id="totalCarrinho">R$ 0,00</div>
+
+                <div class="actions">
+                    <a class="btn-link btn-primary" href="/checkout">Continuar para o checkout</a>
+                    <a class="btn-link btn-secondary" href="/home">Adicionar mais produtos</a>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <script src="/js/carrinho.js"></script>
+</body>
+</html>

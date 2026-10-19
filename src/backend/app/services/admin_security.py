@@ -27,6 +27,7 @@
 # IMPORTAÇÕES
 # ============================================================
 
+import uuid
 from datetime import (
     datetime,
     timedelta,
@@ -43,6 +44,12 @@ from pwdlib import PasswordHash
 
 # Configurações gerais da aplicação.
 from ..config import settings
+
+JWT_ISSUER = "weblue"
+
+_REVOKED_JTIS: set[str] = set()
+
+REFRESH_TOKEN_DIAS = 7
 
 
 # ============================================================
@@ -123,7 +130,8 @@ def verificar_senha_admin(
 # ============================================================
 
 def criar_token_admin(
-    administrador_id: int
+    administrador_id: int,
+    jti: str | None = None
 ) -> str:
     """
     Cria um JWT exclusivo para o administrador.
@@ -136,36 +144,22 @@ def criar_token_admin(
     exp  -> momento de expiração
     """
 
-    # Data e hora atual em UTC.
     agora = datetime.now(
         timezone.utc
     )
 
-
-    # Calcula quando o token irá expirar.
     expiracao = agora + timedelta(
         minutes=TEMPO_TOKEN_MINUTOS
     )
 
-
-    # ========================================================
-    # CONTEÚDO DO TOKEN
-    # ========================================================
-
     dados_token = {
-
-        # ID do administrador autenticado.
         "sub": str(administrador_id),
-
-        # Este campo diferencia o JWT administrativo
-        # do JWT utilizado pelos clientes.
         "tipo": "admin",
-
-        # Data de criação.
-        "iat": agora,
-
-        # Data de expiração.
-        "exp": expiracao
+        "iss": JWT_ISSUER,
+        "iat": int(agora.timestamp()),
+        "nbf": int(agora.timestamp()),
+        "exp": int(expiracao.timestamp()),
+        "jti": jti or str(uuid.uuid4()),
     }
 
 
@@ -181,6 +175,52 @@ def criar_token_admin(
 
 
     return token
+
+
+def criar_refresh_token_admin(administrador_id: int) -> tuple[str, str]:
+    """Cria um refresh token para o administrador."""
+
+    agora = datetime.now(timezone.utc)
+    jti = str(uuid.uuid4())
+    expiracao = agora + timedelta(days=REFRESH_TOKEN_DIAS)
+    dados_token = {
+        "sub": str(administrador_id),
+        "tipo": "admin_refresh",
+        "iss": JWT_ISSUER,
+        "iat": int(agora.timestamp()),
+        "nbf": int(agora.timestamp()),
+        "exp": int(expiracao.timestamp()),
+        "jti": jti,
+    }
+    token = jwt.encode(dados_token, SECRET_KEY, algorithm=ALGORITHM)
+    return token, jti
+
+
+def extrair_jti(token: str) -> str | None:
+    """Extrai o identificador do token sem validar assinatura ou expiração."""
+
+    try:
+        payload = jwt.decode(
+            token,
+            options={
+                "verify_signature": False,
+                "verify_exp": False,
+                "verify_iat": False,
+                "verify_nbf": False,
+            },
+        )
+        return payload.get("jti")
+    except Exception:
+        return None
+
+
+def revogar_token(jti: str | None) -> None:
+    if jti:
+        _REVOKED_JTIS.add(jti)
+
+
+def token_foi_revogado(jti: str | None) -> bool:
+    return bool(jti and jti in _REVOKED_JTIS)
 
 
 # ============================================================
@@ -204,64 +244,75 @@ def verificar_token_admin(
     """
 
     try:
-
-        # ====================================================
-        # DECODIFICAR TOKEN
-        # ====================================================
-
         dados_token = jwt.decode(
             token,
             SECRET_KEY,
-            algorithms=[ALGORITHM]
+            algorithms=[ALGORITHM],
+            issuer=JWT_ISSUER,
+            options={
+                "require": ["sub", "tipo", "iat", "exp", "iss", "nbf", "jti"],
+                "verify_exp": True,
+                "verify_iat": True,
+                "verify_nbf": True,
+            }
         )
 
-
-        # ====================================================
-        # VERIFICAR O TIPO DO TOKEN
-        # ====================================================
-
-        tipo_token = dados_token.get(
-            "tipo"
-        )
-
-
-        # Somente tokens administrativos
-        # podem continuar.
+        tipo_token = dados_token.get("tipo")
         if tipo_token != "admin":
             return None
 
+        jti = dados_token.get("jti")
+        if token_foi_revogado(jti):
+            return None
 
-        # ====================================================
-        # RECUPERAR ID DO ADMINISTRADOR
-        # ====================================================
-
-        administrador_id = dados_token.get(
-            "sub"
-        )
-
-
-        # O token precisa possuir um ID.
+        administrador_id = dados_token.get("sub")
         if administrador_id is None:
             return None
 
-
-        # ====================================================
-        # RETORNAR ID
-        # ====================================================
-
-        return int(
-            administrador_id
-        )
-
-
-    # ========================================================
-    # TOKEN INVÁLIDO OU EXPIRADO
-    # ========================================================
+        return int(administrador_id)
 
     except (
         jwt.InvalidTokenError,
         ValueError,
-        TypeError
+        TypeError,
+        KeyError
     ):
+        return None
 
+
+def verificar_refresh_token_admin(token: str) -> int | None:
+    """Valida refresh token do administrador e rejeita tokens revogados."""
+
+    try:
+        dados_token = jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+            issuer=JWT_ISSUER,
+            options={
+                "require": ["sub", "tipo", "iat", "exp", "iss", "nbf", "jti"],
+                "verify_exp": True,
+                "verify_iat": True,
+                "verify_nbf": True,
+            },
+        )
+
+        if dados_token.get("tipo") != "admin_refresh":
+            return None
+
+        jti = dados_token.get("jti")
+        if token_foi_revogado(jti):
+            return None
+
+        administrador_id = dados_token.get("sub")
+        if administrador_id is None:
+            return None
+
+        return int(administrador_id)
+    except (
+        jwt.InvalidTokenError,
+        ValueError,
+        TypeError,
+        KeyError,
+    ):
         return None

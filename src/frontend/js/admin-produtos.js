@@ -28,6 +28,105 @@
    podemos usar uma URL relativa.
 */
 const API_PRODUTOS = "/api/produtos";
+const API_PEDIDOS = "/api/pedidos";
+const TOKEN_ADMIN_KEY = "tokenAdminWeblue";
+const REFRESH_TOKEN_ADMIN_KEY = "refreshTokenAdminWeblue";
+const listaPedidosRecentes = document.getElementById("listaPedidosRecentes");
+const listaEstoqueBaixo = document.getElementById("listaEstoqueBaixo");
+
+function limparSessaoAdmin() {
+   sessionStorage.removeItem(TOKEN_ADMIN_KEY);
+   sessionStorage.removeItem(REFRESH_TOKEN_ADMIN_KEY);
+   sessionStorage.removeItem("administradorWeblue");
+   localStorage.removeItem(TOKEN_ADMIN_KEY);
+   localStorage.removeItem(REFRESH_TOKEN_ADMIN_KEY);
+   localStorage.removeItem("administradorWeblue");
+}
+
+function redirecionarParaLoginAdmin(mensagem = "Sua sessão administrativa expirou. Faça login novamente.") {
+   limparSessaoAdmin();
+   window.location.href = `/admin-login.html?expirada=1&msg=${encodeURIComponent(mensagem)}`;
+}
+
+async function logoutAdminNoServidor() {
+   const accessToken = sessionStorage.getItem(TOKEN_ADMIN_KEY);
+   const refreshToken = sessionStorage.getItem(REFRESH_TOKEN_ADMIN_KEY);
+
+   if (!accessToken && !refreshToken) {
+       return;
+   }
+
+   try {
+       await fetch("/api/admin/auth/logout", {
+           method: "POST",
+           headers: {
+               "Content-Type": "application/json",
+           },
+           body: JSON.stringify({
+               access_token: accessToken,
+               refresh_token: refreshToken,
+           }),
+       });
+   } catch (erro) {
+       console.warn("Logout administrativo falhou no servidor:", erro);
+   }
+}
+
+async function requisitarComRefreshAdmin(url, opcoes = {}) {
+   const accessToken = sessionStorage.getItem(TOKEN_ADMIN_KEY);
+   const refreshToken = sessionStorage.getItem(REFRESH_TOKEN_ADMIN_KEY);
+
+   if (!accessToken) {
+       redirecionarParaLoginAdmin("Sessão administrativa expirada. Faça login novamente.");
+       throw new Error("Sessão administrativa expirada.");
+   }
+
+   const headers = {
+       ...(opcoes.headers || {}),
+       "Authorization": `Bearer ${accessToken}`
+   };
+
+   const resposta = await fetch(url, {
+       ...opcoes,
+       headers,
+   });
+
+   if (resposta.status !== 401 || !refreshToken) {
+       return resposta;
+   }
+
+   try {
+       const refreshResposta = await fetch("/api/admin/auth/refresh", {
+           method: "POST",
+           headers: {
+               "Content-Type": "application/json",
+           },
+           body: JSON.stringify({ refresh_token: refreshToken }),
+       });
+
+       if (!refreshResposta.ok) {
+           throw new Error("Refresh token inválido.");
+       }
+
+       const novosTokens = await refreshResposta.json();
+       sessionStorage.setItem(TOKEN_ADMIN_KEY, novosTokens.access_token);
+
+       if (novosTokens.refresh_token) {
+           sessionStorage.setItem(REFRESH_TOKEN_ADMIN_KEY, novosTokens.refresh_token);
+       }
+
+       return fetch(url, {
+           ...opcoes,
+           headers: {
+               ...(opcoes.headers || {}),
+               "Authorization": `Bearer ${novosTokens.access_token}`
+           },
+       });
+   } catch (erro) {
+       redirecionarParaLoginAdmin("Sua sessão administrativa expirou. Faça login novamente.");
+       throw erro;
+   }
+}
 
 
 /* ============================================================
@@ -39,6 +138,7 @@ const botaoNovoProduto = document.getElementById("botaoNovoProduto");
 const botaoFecharModal = document.getElementById("botaoFecharModal");
 const botaoCancelar = document.getElementById("botaoCancelar");
 const botaoSalvar = document.getElementById("botaoSalvar");
+const btnSairAdmin = document.getElementById("btnSairAdmin");
 
 // Modal.
 const modalProduto = document.getElementById("modalProduto");
@@ -238,9 +338,6 @@ async function obterMensagemErro(response) {
 
 async function carregarProdutos() {
 
-    /*
-       Exibe uma mensagem enquanto esperamos a API.
-    */
     listaProdutos.innerHTML = `
         <p class="carregando">
             Carregando produtos...
@@ -248,68 +345,111 @@ async function carregarProdutos() {
     `;
 
     try {
-
-        const response = await fetch(API_PRODUTOS);
-
-
-        /*
-           Se o backend responder com erro,
-           interrompemos o processo.
-        */
-        if (!response.ok) {
-
-            const erroApi = await obterMensagemErro(response);
-
-            throw new Error(erroApi);
-        }
-
-
-        const dados = await response.json();
-
-
-        /*
-           O nosso GET /produtos retorna:
-
-           {
-               "total": 1,
-               "produtos": [...]
+       const response = await requisitarComRefreshAdmin(API_PRODUTOS, {
+           method: "GET",
+           headers: {
+               "Accept": "application/json"
            }
+       });
 
-           Portanto usamos dados.produtos.
-        */
-        produtos = Array.isArray(dados.produtos)
-            ? dados.produtos
-            : [];
+       if (!response.ok) {
+           const erroApi = await obterMensagemErro(response);
+           throw new Error(erroApi);
+       }
 
+       const dados = await response.json();
+       produtos = Array.isArray(dados.produtos) ? dados.produtos : [];
 
-        /*
-           Atualiza números do painel.
-        */
-        atualizarEstatisticas();
-
-
-        /*
-           Aplica os filtros atuais e desenha os cards.
-        */
-        aplicarFiltros();
+       atualizarEstatisticas();
+       aplicarFiltros();
 
     } catch (erro) {
-
-        console.error(
-            "Erro ao carregar produtos:",
-            erro
-        );
-
-        listaProdutos.innerHTML = `
+       console.error("Erro ao carregar produtos:", erro);
+       listaProdutos.innerHTML = `
             <p class="sem-produtos">
                 Não foi possível carregar os produtos.
             </p>
-        `;
+       `;
 
-        mostrarMensagem(
-            erro.message || "Não foi possível carregar os produtos.",
-            "erro"
-        );
+       mostrarMensagem(
+           erro.message || "Não foi possível carregar os produtos.",
+           "erro"
+       );
+    }
+}
+
+async function carregarResumoAdmin() {
+    try {
+       const [pedidosResposta, estoqueResposta] = await Promise.all([
+           requisitarComRefreshAdmin(`${API_PEDIDOS}`, {
+               method: "GET",
+               headers: { "Accept": "application/json" },
+           }),
+           requisitarComRefreshAdmin(`${API_PEDIDOS}/estoque`, {
+               method: "GET",
+               headers: { "Accept": "application/json" },
+           }),
+       ]);
+
+       if (!pedidosResposta.ok || !estoqueResposta.ok) {
+           throw new Error("Não foi possível carregar o resumo administrativo.");
+       }
+
+       const pedidosDados = await pedidosResposta.json();
+       const estoqueDados = await estoqueResposta.json();
+
+       const pedidos = Array.isArray(pedidosDados.pedidos) ? pedidosDados.pedidos : [];
+       const estoque = Array.isArray(estoqueDados.produtos) ? estoqueDados.produtos : [];
+
+       const itensRecentes = pedidos.slice(0, 3);
+       if (listaPedidosRecentes) {
+           if (!itensRecentes.length) {
+               listaPedidosRecentes.innerHTML = '<p class="sem-produtos">Nenhum pedido registrado.</p>';
+           } else {
+               listaPedidosRecentes.innerHTML = itensRecentes.map((pedido) => {
+                   const valor = Number(pedido.valor_total || 0);
+                   const data = pedido.criado_em ? new Date(pedido.criado_em).toLocaleString("pt-BR") : "-";
+                   const itens = (pedido.itens || [])
+                       .slice(0, 2)
+                       .map((item) => `${item.quantidade}x ${item.nome}`).join(", ");
+                   return `
+                       <div class="admin-item-resumo">
+                           <strong>#${pedido.id}</strong>
+                           <span>${pedido.status}</span>
+                           <small>${data}</small>
+                           <small>${itens || "Sem itens"}</small>
+                           <strong>${valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>
+                       </div>
+                   `;
+               }).join("");
+           }
+       }
+
+       const estoqueBaixo = estoque
+           .filter((produto) => Number(produto.estoque) <= 3)
+           .slice(0, 4);
+
+       if (listaEstoqueBaixo) {
+           if (!estoqueBaixo.length) {
+               listaEstoqueBaixo.innerHTML = '<p class="sem-produtos">Estoque saudável para todos os produtos.</p>';
+           } else {
+               listaEstoqueBaixo.innerHTML = estoqueBaixo.map((produto) => `
+                   <div class="admin-item-resumo">
+                       <strong>${escaparHtml(produto.nome)}</strong>
+                       <span>Disponível: ${produto.estoque}</span>
+                       <small>${escaparHtml(produto.categoria || "Sem categoria")}</small>
+                   </div>
+               `).join("");
+           }
+       }
+    } catch (erro) {
+       console.error("Erro ao carregar resumo administrativo:", erro);
+       if (listaPedidosRecentes) {
+           listaPedidosRecentes.innerHTML = '<p class="sem-produtos">Não foi possível carregar os pedidos.</p>';
+       }
+       if (listaEstoqueBaixo) {
+           listaEstoqueBaixo.innerHTML = '<p class="sem-produtos">Não foi possível carregar o estoque.</p>';
+       }
     }
 }
 
@@ -712,8 +852,14 @@ function fecharModal() {
 
 async function buscarProdutoPorId(id) {
 
-    const response = await fetch(
-        `${API_PRODUTOS}/${id}`
+    const response = await requisitarComRefreshAdmin(
+        `${API_PRODUTOS}/${id}`,
+        {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        }
     );
 
 
@@ -940,13 +1086,14 @@ async function salvarProduto(event) {
             : "Salvando produto...";
 
 
-        const response = await fetch(
+        const response = await requisitarComRefreshAdmin(
             url,
             {
                 method: metodo,
 
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
                 },
 
                 body: JSON.stringify(
@@ -1056,10 +1203,13 @@ async function alterarStatusProduto(id, statusAtual) {
 
         if (estaAtivo) {
 
-            response = await fetch(
+            response = await requisitarComRefreshAdmin(
                 `${API_PRODUTOS}/${id}`,
                 {
-                    method: "DELETE"
+                    method: "DELETE",
+                    headers: {
+                        "Accept": "application/json"
+                    }
                 }
             );
 
@@ -1072,13 +1222,14 @@ async function alterarStatusProduto(id, statusAtual) {
 
         else {
 
-            response = await fetch(
+            response = await requisitarComRefreshAdmin(
                 `${API_PRODUTOS}/${id}`,
                 {
                     method: "PUT",
 
                     headers: {
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
                     },
 
                     body: JSON.stringify(
@@ -1339,11 +1490,32 @@ listaProdutos.addEventListener(
 
 
 /* ============================================================
-   25. INICIALIZAÇÃO
+   25. LOGOUT DO ADMINISTRADOR
    ============================================================ */
 
-/*
-   Assim que o JavaScript é carregado,
-   buscamos os produtos no backend.
-*/
-carregarProdutos();
+if (btnSairAdmin) {
+   btnSairAdmin.addEventListener("click", async () => {
+       btnSairAdmin.disabled = true;
+       btnSairAdmin.textContent = "Saindo...";
+
+       try {
+           await logoutAdminNoServidor();
+       } finally {
+           limparSessaoAdmin();
+           window.location.href = "/admin-login.html";
+       }
+   });
+}
+
+/* ============================================================
+   26. INICIALIZAÇÃO
+   ============================================================ */
+
+const tokenAdminAtivo = sessionStorage.getItem(TOKEN_ADMIN_KEY);
+
+if (!tokenAdminAtivo) {
+   redirecionarParaLoginAdmin("Você precisa estar autenticado para acessar o painel administrativo.");
+} else {
+   carregarProdutos();
+   carregarResumoAdmin();
+}

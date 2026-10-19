@@ -228,13 +228,15 @@ formLogin.addEventListener(
         try {
 
             // =================================================
-            // LEMBRAR DE MIM
+            // SESSÃO ATIVA
+            // =================================================
+            //
+            // O token nunca deve ser persistido em localStorage.
+            // A sessão do cliente fica restrita ao navegador
+            // atual e é removida quando a aba for fechada.
             // =================================================
 
-            const lembrar =
-                campoLembrar
-                    ? campoLembrar.checked
-                    : false;
+            const lembrar = false;
 
 
             // =================================================
@@ -299,13 +301,23 @@ formLogin.addEventListener(
 
 
             // =================================================
-            // LIMPAR SESSÕES ANTIGAS
+            // LIMPAR SESSÃO ANTIGA
             // =================================================
 
-            // Evita que exista ao mesmo tempo
-            // uma sessão antiga no localStorage
-            // e outra no sessionStorage.
+            sessionStorage.removeItem(
+                "clienteWeblue"
+            );
 
+            sessionStorage.removeItem(
+                "tokenWeblue"
+            );
+
+            sessionStorage.removeItem(
+                "refreshTokenWeblue"
+            );
+
+            // Mantém compatibilidade com navegadores que ainda
+            // tenham dados antigos em localStorage.
             localStorage.removeItem(
                 "clienteWeblue"
             );
@@ -314,12 +326,8 @@ formLogin.addEventListener(
                 "tokenWeblue"
             );
 
-            sessionStorage.removeItem(
-                "clienteWeblue"
-            );
-
-            sessionStorage.removeItem(
-                "tokenWeblue"
+            localStorage.removeItem(
+                "refreshTokenWeblue"
             );
 
 
@@ -327,54 +335,22 @@ formLogin.addEventListener(
             // SALVAR SESSÃO
             // =================================================
 
-            if (lembrar) {
+            sessionStorage.setItem(
+                "clienteWeblue",
+                JSON.stringify(
+                    resultado.cliente
+                )
+            );
 
-                // =============================================
-                // SESSÃO PERSISTENTE
-                // =============================================
-                //
-                // O usuário marcou:
-                //
-                // "Lembrar de mim"
-                //
-                // Portanto utilizamos localStorage.
+            sessionStorage.setItem(
+                "tokenWeblue",
+                resultado.access_token
+            );
 
-                localStorage.setItem(
-                    "clienteWeblue",
-                    JSON.stringify(
-                        resultado.cliente
-                    )
-                );
-
-                localStorage.setItem(
-                    "tokenWeblue",
-                    resultado.access_token
-                );
-
-            } else {
-
-                // =============================================
-                // SESSÃO TEMPORÁRIA
-                // =============================================
-                //
-                // O usuário não marcou:
-                //
-                // "Lembrar de mim"
-                //
-                // Portanto utilizamos sessionStorage.
-
-                sessionStorage.setItem(
-                    "clienteWeblue",
-                    JSON.stringify(
-                        resultado.cliente
-                    )
-                );
-
-                sessionStorage.setItem(
-                    "tokenWeblue",
-                    resultado.access_token
-                );
-            }
+            sessionStorage.setItem(
+                "refreshTokenWeblue",
+                resultado.refresh_token
+            );
 
 
             // =================================================

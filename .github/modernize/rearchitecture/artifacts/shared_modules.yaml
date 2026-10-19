@@ -1,0 +1,96 @@
+modules:
+  - name: cliente.model
+    kind: god-class
+    source_loc: "src/backend/app/models/cliente.py:10"
+    used_by_units: [cliente-cadastro, cliente-login, cliente-perfil, cliente-recuperacao]
+    fields:
+      - name: id
+        type: "int"
+      - name: nome_completo
+        type: "str"
+      - name: email
+        type: "str"
+      - name: cpf
+        type: "str"
+      - name: telefone
+        type: "str"
+      - name: senha_hash
+        type: "str"
+      - name: status
+        type: "str"
+      - name: aceitou_termos_em
+        type: "datetime"
+    god_class: true
+    split_candidate: true
+    migration_strategy: wrap
+    notes: "Modelo central para autenticação, perfil, e cadastro."
+
+  - name: produto.model
+    kind: dto
+    source_loc: "src/backend/app/models/produto.py:47"
+    used_by_units: [produto-admin]
+    fields:
+      - name: id
+        type: "int"
+      - name: nome
+        type: "str"
+      - name: descricao
+        type: "str"
+      - name: preco
+        type: "Decimal"
+      - name: estoque
+        type: "int"
+      - name: categoria
+        type: "str"
+      - name: marca
+        type: "str"
+      - name: imagem_url
+        type: "str | None"
+      - name: status
+        type: "str"
+    god_class: false
+    split_candidate: false
+    migration_strategy: copy
+    notes: "Entidade de catálogo sem múltiplos domínios sobrepostos."
+
+  - name: auth.security
+    kind: utility
+    source_loc: "src/backend/app/services/security.py:9"
+    used_by_units: [cliente-login, cliente-recuperacao, cliente-perfil, admin-login]
+    fields:
+      - name: criar_hash_senha
+        type: "Callable[[str], str]"
+      - name: verificar_senha
+        type: "Callable[[str, str], bool]"
+      - name: criar_token_acesso
+        type: "Callable[[int, bool], str]"
+      - name: verificar_token_acesso
+        type: "Callable[[str], int | None]"
+      - name: criar_token_recuperacao
+        type: "Callable[[str], str]"
+      - name: verificar_token_recuperacao
+        type: "Callable[[str, str], bool]"
+    god_class: false
+    split_candidate: false
+    migration_strategy: copy
+    notes: "Helpers de autenticação e JWT usados em múltiplos fluxos."
+
+  - name: admin.model
+    kind: dto
+    source_loc: "src/backend/app/models/administrador.py:30"
+    used_by_units: [admin-login]
+    fields:
+      - name: id
+        type: "int"
+      - name: nome
+        type: "str"
+      - name: email
+        type: "str"
+      - name: senha_hash
+        type: "str"
+      - name: ativo
+        type: "bool"
+    god_class: false
+    split_candidate: false
+    migration_strategy: copy
+    notes: "Modelo administrativo separado do cliente."

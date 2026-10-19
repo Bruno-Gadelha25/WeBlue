@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weblue | Checkout</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f8f3f6;
+            color: #2d1b2d;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 32px 20px 60px;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .topbar a {
+            text-decoration: none;
+            color: #7c2d72;
+            font-weight: 700;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 20px;
+        }
+        .panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(60, 20, 52, 0.08);
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-weight: 600;
+        }
+        input, select, textarea {
+            border: 1px solid #e5d6e3;
+            border-radius: 10px;
+            padding: 11px 12px;
+            font-size: 1rem;
+        }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        button {
+            border: 0;
+            background: #7c2d72;
+            color: white;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+        .resumo-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #4e2c44;
+        }
+        .total {
+            margin-top: 18px;
+            padding-top: 16px;
+            border-top: 1px solid #f1e3ee;
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: #7c2d72;
+        }
+        .hidden {
+            display: none;
+        }
+        @media (max-width: 760px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <a href="/carrinho">← Voltar ao carrinho</a>
+            <a href="/home">Loja</a>
+        </div>
+
+        <h1>Checkout</h1>
+
+        <div class="grid">
+            <section class="panel">
+                <form id="formCheckout">
+                    <label>
+                        Nome completo
+                        <input id="nome" name="nome" type="text" placeholder="Seu nome" required>
+                    </label>
+
+                    <label>
+                        E-mail
+                        <input id="email" name="email" type="email" placeholder="seu@email.com" required>
+                    </label>
+
+                    <label>
+                        Telefone
+                        <input id="telefone" name="telefone" type="tel" placeholder="(11) 99999-9999" required>
+                    </label>
+
+                    <label>
+                        Endereço de entrega
+                        <textarea id="endereco" name="endereco" placeholder="Rua, número, bairro, cidade" required></textarea>
+                    </label>
+
+                    <label>
+                        Forma de pagamento
+                        <select id="metodoPagamento" name="metodoPagamento">
+                            <option value="PIX">PIX</option>
+                            <option value="CARTAO">Cartão</option>
+                        </select>
+                    </label>
+
+                    <label id="campoCartao" class="hidden">
+                        Número do cartão
+                        <input id="numeroCartao" name="numeroCartao" type="text" placeholder="1234 5678 9012 3456">
+                    </label>
+
+                    <button type="submit">Confirmar compra</button>
+                </form>
+            </section>
+
+            <aside class="panel">
+                <h2>Resumo da compra</h2>
+                <div id="resumoCheckout"></div>
+                <div class="total" id="totalCheckout">R$ 0,00</div>
+            </aside>
+        </div>
+    </div>
+
+    <script src="/js/checkout.js"></script>
+</body>
+</html>

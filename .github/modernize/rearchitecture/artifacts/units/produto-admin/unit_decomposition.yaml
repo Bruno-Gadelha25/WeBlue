@@ -1,0 +1,9 @@
+unit: produto-admin
+commit: false
+candidate_splits:
+  - id: "src/backend/app/routers/produtos.py:87-442"
+    drivers: [concern_split]
+    rationale: "O arquivo mistura cadastro, leitura, manutenção e upload de imagem em um mesmo bloco de rota, o que sugere divisão de responsabilidades futuras."
+    source_slice:
+      file: "src/backend/app/routers/produtos.py"
+      lines: [87, 442]

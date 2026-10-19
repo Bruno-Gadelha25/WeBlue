@@ -29,6 +29,10 @@ from fastapi import (
     UploadFile,
     File,
 )
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+)
 
 # select é utilizado para realizar consultas
 # utilizando o SQLAlchemy 2.x.
@@ -55,6 +59,7 @@ from ..database import get_database
 
 # Importa o model Produto.
 from ..models.produto import Produto
+from ..services.admin_security import verificar_token_admin
 
 # Importa os schemas utilizados para validar
 # os dados recebidos pela API.
@@ -75,9 +80,24 @@ from ..schemas.produto import (
 # POST /produtos
 # GET  /produtos
 router = APIRouter(
-    prefix="/produtos",
     tags=["Produtos"]
 )
+
+seguranca_admin = HTTPBearer()
+
+
+def exigir_admin_autenticado(
+    credenciais: HTTPAuthorizationCredentials = Depends(seguranca_admin)
+) -> int:
+    admin_id = verificar_token_admin(credenciais.credentials)
+
+    if admin_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token administrativo inválido ou expirado."
+        )
+
+    return admin_id
 
 
 # ============================================================
@@ -91,7 +111,8 @@ router = APIRouter(
 )
 def cadastrar_produto(
     dados: CriarProdutoRequest,
-    database: Session = Depends(get_database)
+    database: Session = Depends(get_database),
+    admin_id: int = Depends(exigir_admin_autenticado),
 ):
 
     """
@@ -290,11 +311,51 @@ def cadastrar_produto(
 # ============================================================
 
 @router.get(
+    "/catalogo",
+    summary="Listar catálogo público de produtos"
+)
+def listar_catalogo_publico(
+    database: Session = Depends(get_database),
+):
+    """Retorna somente os produtos ativos para a vitrine da loja."""
+
+    consulta = (
+        select(Produto)
+        .where(Produto.status == "ATIVO")
+        .order_by(Produto.id)
+    )
+
+    produtos = database.scalars(consulta).all()
+    lista_produtos = []
+
+    for produto in produtos:
+        lista_produtos.append({
+            "id": produto.id,
+            "nome": produto.nome,
+            "descricao": produto.descricao,
+            "preco": str(produto.preco),
+            "estoque": produto.estoque,
+            "categoria": produto.categoria,
+            "marca": produto.marca,
+            "imagem_url": produto.imagem_url,
+            "status": produto.status,
+            "data_criacao": produto.data_criacao,
+            "data_atualizacao": produto.data_atualizacao,
+        })
+
+    return {
+        "total": len(lista_produtos),
+        "produtos": lista_produtos,
+    }
+
+
+@router.get(
     "",
     summary="Listar produtos"
 )
 def listar_produtos(
-    database: Session = Depends(get_database)
+    database: Session = Depends(get_database),
+    admin_id: int = Depends(exigir_admin_autenticado),
 ):
 
     """
@@ -408,7 +469,8 @@ def listar_produtos(
 )
 def buscar_produto_por_id(
     produto_id: int,
-    database: Session = Depends(get_database)
+    database: Session = Depends(get_database),
+    admin_id: int = Depends(exigir_admin_autenticado),
 ):
 
     """
@@ -530,7 +592,8 @@ def buscar_produto_por_id(
 def atualizar_produto(
     produto_id: int,
     dados: AtualizarProdutoRequest,
-    database: Session = Depends(get_database)
+    database: Session = Depends(get_database),
+    admin_id: int = Depends(exigir_admin_autenticado),
 ):
 
     """
@@ -872,7 +935,8 @@ def atualizar_produto(
 )
 def desativar_produto(
     produto_id: int,
-    database: Session = Depends(get_database)
+    database: Session = Depends(get_database),
+    admin_id: int = Depends(exigir_admin_autenticado),
 ):
 
     """
@@ -1098,7 +1162,8 @@ async def enviar_imagem_produto(
     # chegará como multipart/form-data.
     imagem: UploadFile = File(...),
 
-    database: Session = Depends(get_database)
+    database: Session = Depends(get_database),
+    admin_id: int = Depends(exigir_admin_autenticado),
 ):
 
     """

@@ -64,6 +64,15 @@ class AdministradorResposta(BaseModel):
 # RESPOSTA DO LOGIN
 # ============================================================
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
+class LogoutRequest(BaseModel):
+    access_token: str | None = None
+    refresh_token: str | None = None
+
+
 class AdministradorLoginResposta(BaseModel):
 
     # Mensagem apresentada depois
@@ -73,6 +82,9 @@ class AdministradorLoginResposta(BaseModel):
     # JWT que será utilizado para acessar
     # as funções protegidas do administrador.
     access_token: str
+
+    # Refresh token usado para rotação de sessão.
+    refresh_token: str
 
     # Tipo padrão de autenticação JWT.
     token_type: str = "bearer"

@@ -1,0 +1,35 @@
+unit: cliente-recuperacao
+side_effects:
+  - source_loc: "src/backend/app/routers/recuperacao_senha.py:35"
+    effect: "Gera token temporário de recuperação para o email informado."
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/recuperacao_senha.py:108"
+    effect: "Atualiza a senha do cliente com hash e persiste no banco."
+    must_preserve: true
+branches:
+  - source_loc: "src/backend/app/routers/recuperacao_senha.py:48"
+    condition: "Cliente não encontrado."
+    behavior: "Retorna 404 Not Found."
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/recuperacao_senha.py:89"
+    condition: "Token de recuperação inválido ou expirado."
+    behavior: "Retorna 401 Unauthorized."
+    must_preserve: true
+error_paths:
+  - source_loc: "src/backend/app/routers/recuperacao_senha.py:48"
+    trigger: "E-mail não cadastrado."
+    outcome: "404 Not Found."
+    contract: "404 Not Found"
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/recuperacao_senha.py:89"
+    trigger: "Token inválido, expirado ou sem correspondência ao e-mail."
+    outcome: "401 Unauthorized."
+    contract: "401 Unauthorized"
+    must_preserve: true
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: "src/backend/app/routers/recuperacao_senha.py:108"
+    scope: "Atualização da senha_hash em uma única transação do cliente."
+    isolation: "database default"
+    must_preserve: true

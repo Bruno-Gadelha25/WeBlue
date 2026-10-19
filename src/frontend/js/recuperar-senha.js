@@ -238,22 +238,17 @@ if (botaoSolicitarToken) {
 
 
                 // =============================================
-                // SOMENTE PARA O PROTÓTIPO
+                // SEGURANÇA
                 // =============================================
                 //
-                // Atualmente o backend retorna o token
-                // diretamente na resposta.
-                //
-                // Em uma aplicação em produção,
-                // normalmente esse token seria enviado
-                // para o e-mail do cliente.
+                // O token de recuperação não deve ser exposto
+                // na resposta HTTP. Em produção ele seria enviado
+                // por e-mail ou por um canal seguro.
                 // =============================================
 
-                if (dados.token_recuperacao) {
-
-                    campoToken.value =
-                        dados.token_recuperacao;
-                }
+                // Sem token na resposta, o cliente precisa receber
+                // o código por e-mail ou outro canal seguro.
+                campoToken.value = "";
 
 
                 // =============================================
@@ -261,7 +256,7 @@ if (botaoSolicitarToken) {
                 // =============================================
 
                 exibirMensagem(
-                    "Token de recuperação gerado. Ele é válido por 15 minutos.",
+                    "Se o e-mail estiver cadastrado, um token de recuperação foi enviado por canal seguro. Verifique seu e-mail e continue com a redefinição da senha.",
                     "sucesso"
                 );
 

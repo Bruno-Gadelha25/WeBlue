@@ -112,20 +112,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     // ========================================================
 
     /*
-        Existem duas possibilidades:
+        A autenticação do cliente usa apenas a sessão ativa do navegador.
 
-        sessionStorage:
-        quando o cliente NÃO marcou "Lembrar de mim".
-
-        localStorage:
-        quando o cliente marcou "Lembrar de mim".
-
-        Primeiro procuramos na sessão atual.
-        Se não existir, procuramos no armazenamento permanente.
+        Isso evita persistência insegura do JWT em localStorage,
+        reduzindo a superfície de ataque por XSS.
     */
     const token =
-        sessionStorage.getItem("tokenWeblue") ||
-        localStorage.getItem("tokenWeblue");
+        sessionStorage.getItem("tokenWeblue");
 
 
     // ========================================================
@@ -157,17 +150,99 @@ document.addEventListener("DOMContentLoaded", async () => {
     function limparSessao() {
 
         /*
-            Removemos tanto sessionStorage quanto localStorage.
-
-            Isso garante que nenhum token ou dado antigo
-            permaneça no navegador.
+            Remove apenas a sessão ativa do cliente.
+            Mantém compatibilidade limpando também qualquer dado
+            antigo que ainda tenha ficado em localStorage.
         */
 
         sessionStorage.removeItem("clienteWeblue");
         sessionStorage.removeItem("tokenWeblue");
+        sessionStorage.removeItem("refreshTokenWeblue");
 
         localStorage.removeItem("clienteWeblue");
         localStorage.removeItem("tokenWeblue");
+        localStorage.removeItem("refreshTokenWeblue");
+    }
+
+    async function logoutClienteNoServidor() {
+        const accessToken = sessionStorage.getItem("tokenWeblue");
+        const refreshToken = sessionStorage.getItem("refreshTokenWeblue");
+
+        if (!accessToken && !refreshToken) {
+            return;
+        }
+
+        try {
+            await fetch("/api/auth/logout", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    access_token: accessToken,
+                    refresh_token: refreshToken,
+                }),
+            });
+        } catch (erro) {
+            console.warn("Logout do servidor falhou:", erro);
+        }
+    }
+
+    async function requisitarComRefresh(url, opcoes = {}) {
+        const accessToken = sessionStorage.getItem("tokenWeblue");
+        const refreshToken = sessionStorage.getItem("refreshTokenWeblue");
+
+        if (!accessToken) {
+            limparSessao();
+            window.location.href = "/login";
+            throw new Error("Sessão expirada.");
+        }
+
+        const headers = {
+            ...(opcoes.headers || {}),
+            "Authorization": `Bearer ${accessToken}`,
+        };
+
+        const resposta = await fetch(url, {
+            ...opcoes,
+            headers,
+        });
+
+        if (resposta.status !== 401 || !refreshToken) {
+            return resposta;
+        }
+
+        try {
+            const refreshResposta = await fetch("/api/auth/refresh", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ refresh_token: refreshToken }),
+            });
+
+            if (!refreshResposta.ok) {
+                throw new Error("Refresh token inválido.");
+            }
+
+            const novosTokens = await refreshResposta.json();
+            sessionStorage.setItem("tokenWeblue", novosTokens.access_token);
+            if (novosTokens.refresh_token) {
+                sessionStorage.setItem("refreshTokenWeblue", novosTokens.refresh_token);
+            }
+
+            return fetch(url, {
+                ...opcoes,
+                headers: {
+                    ...(opcoes.headers || {}),
+                    "Authorization": `Bearer ${novosTokens.access_token}`,
+                },
+            });
+        } catch (erro) {
+            limparSessao();
+            window.location.href = "/login";
+            throw erro;
+        }
     }
 
 
@@ -178,24 +253,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     function salvarClienteLocalmente(cliente) {
 
         /*
-            Se o token estiver no sessionStorage,
-            salvamos os dados do cliente no mesmo local.
+            Os dados do cliente ficam junto com a sessão atual,
+            não em armazenamento persistente.
         */
-        if (sessionStorage.getItem("tokenWeblue")) {
-
-            sessionStorage.setItem(
-                "clienteWeblue",
-                JSON.stringify(cliente)
-            );
-
-            return;
-        }
-
-
-        /*
-            Caso contrário, o login utilizou localStorage.
-        */
-        localStorage.setItem(
+        sessionStorage.setItem(
             "clienteWeblue",
             JSON.stringify(cliente)
         );
@@ -402,17 +463,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                 O JWT vai no cabeçalho Authorization.
             */
-            const resposta = await fetch(
+            const resposta = await requisitarComRefresh(
                 "/api/perfil",
                 {
                     method: "GET",
 
                     headers: {
-
                         "Accept": "application/json",
-
-                        "Authorization":
-                            `Bearer ${token}`
                     }
                 }
             );
@@ -810,7 +867,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     // PUT /perfil
                     // =========================================
 
-                    const resposta = await fetch(
+                    const resposta = await requisitarComRefresh(
                         "/api/perfil",
                         {
                             method: "PUT",
@@ -822,9 +879,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                                 "Content-Type":
                                     "application/json",
-
-                                "Authorization":
-                                    `Bearer ${token}`
                             },
 
                             /*
@@ -1079,7 +1133,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         btnSair.addEventListener(
             "click",
-            () => {
+            async () => {
+
+                await logoutClienteNoServidor();
 
                 // Remove token e dados do cliente.
                 limparSessao();

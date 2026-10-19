@@ -1,0 +1,35 @@
+unit: cliente-perfil
+side_effects:
+  - source_loc: "src/backend/app/routers/perfil.py:147"
+    effect: "Consulta cliente autenticado por JWT."
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/perfil.py:258"
+    effect: "Atualiza email e/ou telefone do cliente autenticado."
+    must_preserve: true
+branches:
+  - source_loc: "src/backend/app/routers/perfil.py:179"
+    condition: "Cliente autenticado não está em status ATIVA."
+    behavior: "Retorna 403 Forbidden."
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/perfil.py:302"
+    condition: "Novo e-mail já pertence a outro cliente."
+    behavior: "Retorna 409 Conflict para evitar duplicidade."
+    must_preserve: true
+error_paths:
+  - source_loc: "src/backend/app/routers/perfil.py:136"
+    trigger: "Token inválido ou expirado."
+    outcome: "401 Unauthorized."
+    contract: "401 Unauthorized"
+    must_preserve: true
+  - source_loc: "src/backend/app/routers/perfil.py:304"
+    trigger: "Email duplicado em outro cliente."
+    outcome: "409 Conflict."
+    contract: "409 Conflict"
+    must_preserve: true
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: "src/backend/app/routers/perfil.py:258"
+    scope: "Atualização do perfil no banco em sessão de cliente autenticado."
+    isolation: "database default"
+    must_preserve: true

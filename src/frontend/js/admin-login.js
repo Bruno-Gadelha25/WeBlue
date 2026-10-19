@@ -41,6 +41,7 @@ const API_ADMIN_LOGIN = "/api/admin/auth/login";
 //
 
 const TOKEN_ADMIN_KEY = "tokenAdminWeblue";
+const REFRESH_TOKEN_ADMIN_KEY = "refreshTokenAdminWeblue";
 
 
 // ============================================================
@@ -67,6 +68,20 @@ const btnMostrarSenha =
 
 const mensagemLogin =
     document.getElementById("mensagemLogin");
+
+const paramsUrl = new URLSearchParams(window.location.search);
+const mensagemExpirada = paramsUrl.get("expirada") === "1";
+const mensagemUrl = paramsUrl.get("msg") || "Sua sessão administrativa expirou. Faça login novamente.";
+
+if (mensagemExpirada) {
+    sessionStorage.removeItem(TOKEN_ADMIN_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_ADMIN_KEY);
+    sessionStorage.removeItem("administradorWeblue");
+    localStorage.removeItem(TOKEN_ADMIN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_ADMIN_KEY);
+    localStorage.removeItem("administradorWeblue");
+    mostrarMensagem(mensagemUrl, "info");
+}
 
 
 // ============================================================
@@ -350,6 +365,13 @@ formAdminLogin.addEventListener(
                 TOKEN_ADMIN_KEY,
                 dados.access_token
             );
+
+            if (dados.refresh_token) {
+                sessionStorage.setItem(
+                    REFRESH_TOKEN_ADMIN_KEY,
+                    dados.refresh_token
+                );
+            }
 
 
             // ------------------------------------------------
