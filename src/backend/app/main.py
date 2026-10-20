@@ -516,6 +516,30 @@ def pagina_admin_produtos():
     )
 
 # ============================================================
+# DASHBOARD ADMINISTRATIVO
+# ============================================================
+
+@app.get(
+    "/admin-dashboard",
+    include_in_schema=False,
+)
+@app.get(
+    "/admin-dashboard.html",
+    include_in_schema=False,
+)
+def pagina_admin_dashboard():
+
+    arquivo = FRONTEND_DIR / "admin-dashboard.html"
+
+    if not arquivo.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Página dashboard não encontrada."
+        )
+
+    return FileResponse(arquivo)
+
+# ============================================================
 # PÁGINA - LOGIN ADMINISTRATIVO
 # ============================================================
 

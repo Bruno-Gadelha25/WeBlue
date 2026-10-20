@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Administrativo</title>
+
+    <link rel="stylesheet" href="css/admin-dashboard.css">
+</head>
+<body>
+
+<header class="topbar">
+
+    <h1>WEBLUE ADMIN</h1>
+
+    <nav>
+    <a href="/admin-dashboard">Dashboard</a>
+    <a href="/admin-produtos">Produtos</a>
+    <a href="/home">Loja</a>
+
+    <button id="btnLogout">
+        Sair
+    </button>
+</nav>
+
+</header>
+
+<main>
+
+    <section class="cards">
+
+        <div class="card">
+            <h3>Faturamento</h3>
+            <p id="faturamentoTotal">R$ 0,00</p>
+        </div>
+
+        <div class="card">
+            <h3>Pedidos</h3>
+            <p id="totalPedidos">0</p>
+        </div>
+
+        <div class="card">
+            <h3>Ticket Médio</h3>
+            <p id="ticketMedio">R$ 0,00</p>
+        </div>
+
+        <div class="card">
+            <h3>Estoque Total</h3>
+            <p id="estoqueTotal">0</p>
+        </div>
+
+    </section>
+
+    <section class="painel">
+
+        <h2>Produtos Mais Vendidos</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Quantidade</th>
+                </tr>
+            </thead>
+
+            <tbody id="tabelaProdutos"></tbody>
+        </table>
+
+    </section>
+
+</main>
+
+<script src="js/admin-dashboard.js"></script>
+
+</body>
+</html>

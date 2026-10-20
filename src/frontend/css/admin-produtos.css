@@ -1241,3 +1241,9 @@ select {
         font-size: 10px;
     }
 }
+
+.menu-admin {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}

@@ -371,3 +371,69 @@ def consultar_estoque(
             for produto in produtos
         ],
     }
+@router.get(
+    "/relatorios/vendas",
+    summary="Resumo geral de vendas"
+)
+def relatorio_vendas(
+    database: Session = Depends(get_database),
+    admin_id: int = Depends(exigir_admin_autenticado),
+):
+    pedidos = (
+        database.execute(
+            select(Pedido)
+            .where(Pedido.status == StatusPedido.PAGO)
+        )
+        .scalars()
+        .all()
+    )
+
+    total_vendas = sum(
+        float(p.valor_total)
+        for p in pedidos
+    )
+
+    quantidade_pedidos = len(pedidos)
+
+    ticket_medio = (
+        total_vendas / quantidade_pedidos
+        if quantidade_pedidos
+        else 0
+    )
+
+    return {
+        "faturamento_total": round(total_vendas, 2),
+        "quantidade_pedidos": quantidade_pedidos,
+        "ticket_medio": round(ticket_medio, 2)
+    }
+@router.get(
+    "/relatorios/produtos",
+    summary="Produtos mais vendidos"
+)
+def relatorio_produtos(
+    database: Session = Depends(get_database),
+    admin_id: int = Depends(exigir_admin_autenticado),
+):
+    resultado = (
+        database.query(
+            Produto.nome,
+            func.sum(ItemPedido.quantidade).label("total")
+        )
+        .join(
+            ItemPedido,
+            Produto.id == ItemPedido.produto_id
+        )
+        .group_by(Produto.nome)
+        .order_by(
+            func.sum(ItemPedido.quantidade).desc()
+        )
+        .all()
+    )
+
+    return [
+        {
+            "produto": item.nome,
+            "quantidade_vendida": int(item.total)
+        }
+        for item in resultado
+    ]
