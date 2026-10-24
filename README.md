@@ -67,7 +67,7 @@ MySQL
 
 ## Localização dos Artefatos
 
-- **Repositório GitHub:** [link do repositório]
+- **Repositório GitHub:** https://github.com/matdavidbs-gif/WeBlue.git
 - **Branch principal:** `main`
 - **Banco de dados:** Concluído
 - **API / Swagger:** Concluído
